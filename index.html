@@ -228,10 +228,9 @@ function echAt(date){
 function schedule(T){
   const R=S.remb, out=[]; if(!R.premiere) return out;
   const k=FREQ[R.freq]||1; let cumul=0;
-  const lastDep=R.depenses.reduce((a,d)=>d.date>a?d.date:a,"");
   for(let i=0;i<600;i++){
     const date=addMonths(R.premiere,i*k);
-    const dep=R.depenses.filter(d=>d.date&&d.date<=date).reduce((a,d)=>a+(d.montant||0),0);
+    const dep=R.depenses.reduce((a,d)=>a+(d.montant||0),0);
     const pon=R.ponctuels.filter(p=>p.date&&p.date<=date).reduce((a,p)=>a+(p.montant||0),0);
     const du=Math.max(0,dep-pon-cumul);
     const prevu=Math.max(0,Math.min(du,echAt(date)));
@@ -241,14 +240,14 @@ function schedule(T){
     const passed=date<=T;
     let etat=!passed?"À venir":ex==null?"Versée":ex===0?"Non versée":ex>prevu?"Plus":ex<prevu?"Moins":"Versée";
     out.push({n:i+1,date,du,prevu,ex,verse,reste,passed,etat});
-    if(date>T && reste<=0.005 && date>=lastDep) break;
+    if(date>T && reste<=0.005) break;
     if(date>T && echAt(date)<=0 && reste>0) {break}
   }
   return out;
 }
 function rembSummary(T){
   const R=S.remb, sch=schedule(T);
-  const dep=R.depenses.filter(d=>d.date&&d.date<=T).reduce((a,d)=>a+(d.montant||0),0);
+  const dep=R.depenses.reduce((a,d)=>a+(d.montant||0),0);
   const pon=R.ponctuels.filter(p=>p.date&&p.date<=T).reduce((a,p)=>a+(p.montant||0),0);
   const verse=sch.filter(s=>s.passed).reduce((a,s)=>a+s.verse,0);
   const rembourse=verse+pon; const reste=dep-rembourse;
@@ -426,8 +425,8 @@ function editItem(kind,id){
       onSave:v=>{if(!v.nom)return "Donne un libellé.";const o=it||{id:uid(),cat:"Divers"};Object.assign(o,v,{type:"fixe"});if(isNew)list.push(o)},onDelete:del});
   } else if(kind==="dep"){
     openForm({title:isNew?"Nouvelle dépense avancée":"Dépense avancée",
-      fields:[{key:"nom",label:"Dépense",value:it?.nom},{key:"date",label:"Date",type:"date",value:it?.date||todayISO()},{key:"montant",label:"Montant",type:"number",value:it?.montant},{key:"note",label:"Note (facultatif)",value:it?.note}],
-      onSave:v=>{if(!v.nom)return "Donne un nom à la dépense.";if(!v.date)return "Indique la date.";if(v.montant==null)return "Indique le montant.";const o=it||{id:uid()};Object.assign(o,v);if(isNew)list.push(o)},onDelete:del});
+      fields:[{key:"nom",label:"Dépense",value:it?.nom},{key:"date",label:"Date (facultatif, pour mémoire)",type:"date",value:it?.date||""},{key:"montant",label:"Montant",type:"number",value:it?.montant},{key:"note",label:"Note (facultatif)",value:it?.note}],
+      onSave:v=>{if(!v.nom)return "Donne un nom à la dépense.";if(v.montant==null)return "Indique le montant.";const o=it||{id:uid()};Object.assign(o,v);if(isNew)list.push(o)},onDelete:del});
   } else if(kind==="pon"){
     openForm({title:isNew?"Versement ponctuel":"Versement ponctuel",
       fields:[{key:"date",label:"Date",type:"date",value:it?.date||todayISO()},{key:"montant",label:"Montant",type:"number",value:it?.montant},{key:"note",label:"Note (facultatif)",value:it?.note}],
